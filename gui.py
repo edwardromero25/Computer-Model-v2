@@ -13,30 +13,8 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolb
 from PIL import Image, ImageTk
 from dateutil import parser
 from dataCompile import DataProcessor, PathVisualization
-import csv
 
 SCRIPT_DIR = os.path.abspath(os.path.dirname(__file__))
-
-
-class CustomToolbar(NavigationToolbar2Tk):
-    def __init__(self, canvas, parent, export_callback=None, export_components_callback=None):
-        self.toolitems = list(NavigationToolbar2Tk.toolitems)
-        if export_callback:
-            self.toolitems.append(("ExportData", "Export data to CSV", "filesave", "export_data"))
-        if export_components_callback:
-            self.toolitems.append(("ExportComponents", "Export data to CSV", "filesave", "export_components_data"))
-        super().__init__(canvas, parent)
-        self.export_callback = export_callback
-        self.export_components_callback = export_components_callback
-
-    def export_data(self):
-        if self.export_callback:
-            self.export_callback()
-
-    def export_components_data(self):
-        if self.export_components_callback:
-            self.export_components_callback()
-
 
 class GUI:
     def __init__(self, master):
@@ -207,23 +185,8 @@ class GUI:
         self.ax.set_ylabel('Acceleration (g)')
         self.canvas = FigureCanvasTkAgg(self.figure, self.magnitude_frame)
         self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
-        self.toolbar = CustomToolbar(self.canvas, self.magnitude_frame, self._export_magnitude_data)
+        self.toolbar = NavigationToolbar2Tk(self.canvas, self.magnitude_frame)
         self.toolbar.update()
-
-    def _export_magnitude_data(self):
-        file_path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV files", "*.csv")])
-        if file_path:
-            try:
-                if not self.ax.lines:
-                    raise ValueError("No data available to export.")
-                with open(file_path, mode='w', newline='') as file:
-                    writer = csv.writer(file)
-                    writer.writerow(["Time (hours)", "Acceleration (g)"])
-                    for time, mag in zip(self.ax.lines[0].get_xdata(), self.ax.lines[0].get_ydata()):
-                        writer.writerow([time, mag])
-                messagebox.showinfo("Success", "Data exported successfully.")
-            except Exception as e:
-                messagebox.showerror("Error", str(e))
 
     def _setup_path_plots(self):
         self.path_figure = plt.Figure()
@@ -258,27 +221,8 @@ class GUI:
         self.components_ax.set_ylabel('Acceleration (g)')
         self.components_canvas = FigureCanvasTkAgg(self.components_figure, self.vector_components_frame)
         self.components_canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
-        self.components_toolbar = CustomToolbar(self.components_canvas, self.vector_components_frame, export_components_callback=self._export_components_data)
+        self.components_toolbar = NavigationToolbar2Tk(self.components_canvas, self.vector_components_frame)
         self.components_toolbar.update()
-
-    def _export_components_data(self):
-        file_path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV files", "*.csv")])
-        if file_path:
-            try:
-                if not self.components_ax.lines:
-                    raise ValueError("No data available to export.")
-                with open(file_path, mode='w', newline='') as file:
-                    writer = csv.writer(file)
-                    writer.writerow(["Time (hours)", "X (g)", "Y (g)", "Z (g)"])
-                    time_data = self.components_ax.lines[0].get_xdata()
-                    x_data = self.components_ax.lines[0].get_ydata()
-                    y_data = self.components_ax.lines[1].get_ydata()
-                    z_data = self.components_ax.lines[2].get_ydata()
-                    for time, x, y, z in zip(time_data, x_data, y_data, z_data):
-                        writer.writerow([time, x, y, z])
-                messagebox.showinfo("Success", "Data exported successfully.")
-            except Exception as e:
-                messagebox.showerror("Error", str(e))
 
     def _configure_3d_axes(self, ax, title):
         ax.set_xlabel('X')
